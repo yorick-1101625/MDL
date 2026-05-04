@@ -15,7 +15,7 @@ def sanitize_filename(name: str) -> str:
 
 def download_video_audio(url: str) -> Path:
 
-    yt = YouTube(url)
+    yt = YouTube(url, on_progress_callback=on_progress)
     stream = yt.streams.get_audio_only()
 
     if stream is None:
