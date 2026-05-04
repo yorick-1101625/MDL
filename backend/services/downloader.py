@@ -54,7 +54,12 @@ async def download_playlist_audio(url: str) -> list[Path]:
     return downloaded_files
 
 
-def get_details(yt: YouTube):
-    print("author: ", yt.author)
-    print("title: ", yt.title)
-    print("thumbnail_url: ", yt.thumbnail_url)
+def get_video_details(url: str) -> dict[str, Any]:
+    yt = YouTube(url)
+    return {
+        'author': yt.author,
+        'title': yt.title,
+        'duration': yt.length,
+        'thumbnail_url': yt.thumbnail_url,
+        'id': yt.video_id,
+    }

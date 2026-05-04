@@ -1,15 +1,11 @@
-import asyncio
-from asyncio import to_thread
-
 from anyio import from_thread
-from anyio.to_thread import run_sync
 from fastapi import FastAPI
-from pytubefix import Playlist, Stream, YouTube
+from pytubefix import Stream
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from backend.services.downloader import download_video_audio, download_playlist_audio
+from backend.services.downloader import download_video_audio, download_playlist_audio, get_video_details
 
 
 class Url(BaseModel):
@@ -46,21 +42,40 @@ app.add_middleware(
 async def ws_download_video(websocket: WebSocket):
     await websocket.accept()
 
-    # on_progress callback
-    def on_progress(stream: Stream, chunk: bytes, bytes_remaining: int):
-        total_size = stream.filesize
-        bytes_downloaded = total_size - bytes_remaining
-        percentage_of_completion = round((bytes_downloaded / total_size) * 100, 2)
-
-        from_thread.run(websocket.send_json,({"progress": percentage_of_completion}))
-
     try:
         url = await websocket.receive_text()
-        print("url: ", url)
+
+        video_details = get_video_details(url)
+
+        # on_progress callback
+        def on_progress(stream: Stream, chunk: bytes, bytes_remaining: int):
+            total_size = stream.filesize
+            bytes_downloaded = total_size - bytes_remaining
+            percentage_of_completion = round((bytes_downloaded / total_size) * 100, 2)
+
+            from_thread.run(websocket.send_json,{
+                'type': 'progress',
+                'data': {
+                    'value': percentage_of_completion,
+                    'id': video_details['id'],
+                }
+            })
+
+        # Send back details: title, author, thumbnail_url
+        await websocket.send_json({
+            'type': 'metadata',
+            'data': video_details
+        })
 
         await download_video_audio(url, on_progress)
 
-        await websocket.send_json({"status": "success"})
+        await websocket.send_json({
+            'type': 'progress',
+            'data': {
+                'value': 100,
+                'id': video_details['id'],
+            }
+        })
 
     except WebSocketDisconnect:
         print("Client disconnected")
@@ -75,16 +90,4 @@ async def download(url: Url):
 
     return {"files": downloaded_files}
 
-
-# @app.websocket('/ws')
-# async def websocket_endpoint(websocket: WebSocket):
-#     await websocket.accept()
-#
-#     try:
-#         data = await websocket.receive_text()
-#         await websocket.send_text(f"Message: {data}")
-#     except WebSocketDisconnect:
-#         print("Client disconnected")
-#     except Exception as e:
-#         await websocket.send_json({"error": str(e)})
 

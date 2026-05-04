@@ -1,13 +1,21 @@
 import {Progress} from "@/components/ui/progress.tsx";
 import {Item, ItemContent, ItemDescription, ItemMedia, ItemTitle} from "@/components/ui/item.tsx";
 
-export default function Song() {
+type VideoProps = {
+    id: string,
+    title: string,
+    author: string,
+    duration: number,
+    progress: number,
+}
+
+export default function Video({id, title, author, duration, progress}: VideoProps) {
     return (
         <Item variant="outline" role="listitem">
             <ItemMedia variant="image">
                 <img
-                    src="https://i.ytimg.com/vi/_nypMwCyNEQ/sddefault.jpg"
-                    alt="Forever"
+                    src={`https://i.ytimg.com/vi/${id}/sddefault.jpg`}
+                    alt={title}
                     width={32}
                     height={32}
                     className="object-cover"
@@ -15,14 +23,18 @@ export default function Song() {
             </ItemMedia>
             <ItemContent>
                 <ItemTitle className="line-clamp-1">
-                    Forever
+                    {title}
                 </ItemTitle>
-                <ItemDescription>ILLENIUM</ItemDescription>
+                <ItemDescription>{author}</ItemDescription>
             </ItemContent>
             <ItemContent className="flex-none text-center">
-                <ItemDescription>2:52</ItemDescription>
+                <ItemDescription>{
+                    `${Math.floor(duration/60)}:${duration - (Math.floor(duration/60) * 60)}`
+
+                //TODO:     ADD STATUS CHECKMARK OR CROSS
+                }</ItemDescription>
             </ItemContent>
-            <Progress value={50}/>
+            <Progress value={progress}/>
         </Item>
     );
 }
