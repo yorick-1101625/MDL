@@ -61,6 +61,7 @@ def get_video_metadata(yt: YouTube) -> dict[str, Any]:
         # 'duration': yt.length,
         'thumbnail_url': yt.thumbnail_url,
         'id': yt.video_id,
+        'url': yt.watch_url,
     }
 
 

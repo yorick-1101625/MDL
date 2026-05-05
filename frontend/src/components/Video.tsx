@@ -5,21 +5,25 @@ type VideoProps = {
     id: string,
     title: string,
     author: string,
-    progress: number,
+    url: string,
+    progress?: number,
 }
 
-export default function Video({id, title, author, progress}: VideoProps) {
+export default function Video({id, title, author, url, progress = 0}: VideoProps) {
     return (
         <Item variant="outline" role="listitem">
-            <ItemMedia variant="image">
-                <img
-                    src={`https://i.ytimg.com/vi/${id}/sddefault.jpg`}
-                    alt={title}
-                    width={32}
-                    height={32}
-                    className="object-cover"
-                />
-            </ItemMedia>
+            <a href={url} target="_blank">
+                <ItemMedia variant="image">
+                    <img
+                        src={`https://i.ytimg.com/vi/${id}/sddefault.jpg`}
+                        alt={title}
+                        width={32}
+                        height={32}
+                        className="object-cover"
+                    />
+                </ItemMedia>
+            </a>
+
             <ItemContent>
                 <ItemTitle className="line-clamp-1">
                     {title}

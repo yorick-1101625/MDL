@@ -5,6 +5,7 @@ type TVideoMetadataResponse = {
     title: string,
     author: string,
     thumbnail_url: string,
+    url: string,
 };
 
 export async function getVideoMetadata(url: string): Promise<TVideo> {
@@ -15,8 +16,9 @@ export async function getVideoMetadata(url: string): Promise<TVideo> {
         id: data.id,
         title: data.title,
         author: data.author,
+        url: data.url,
         thumbnailUrl: data.thumbnail_url,
-        progress: 0
+        progress: 0,
     };
 }
 
@@ -29,6 +31,7 @@ export async function getPlaylistMetadata(url: string): Promise<TVideo[]> {
         id: video.id,
         title: video.title,
         author: video.author,
+        url: video.url,
         thumbnailUrl: video.thumbnail_url,
         progress: 0,
     }))
