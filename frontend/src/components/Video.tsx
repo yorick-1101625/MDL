@@ -25,7 +25,9 @@ export default function Video({id, title, author, duration, progress}: VideoProp
                 <ItemTitle className="line-clamp-1">
                     {title}
                 </ItemTitle>
-                <ItemDescription>{author}</ItemDescription>
+                <ItemDescription>
+                    {author}
+                </ItemDescription>
             </ItemContent>
             <ItemContent className="flex-none text-center">
                 <ItemDescription>{
