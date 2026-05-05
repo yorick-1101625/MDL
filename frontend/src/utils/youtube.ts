@@ -5,34 +5,65 @@ type TVideoMetadataResponse = {
     title: string,
     author: string,
     thumbnail_url: string,
+    duration: number,
     url: string,
 };
 
-export async function getVideoMetadata(url: string): Promise<TVideo> {
-    const data: TVideoMetadataResponse = await fetch(`http://localhost:8000/metadata/video?url=${url}`)
-        .then(res => res.json());
 
+function responseToVideo(res: TVideoMetadataResponse): TVideo {
     return {
-        id: data.id,
-        title: data.title,
-        author: data.author,
-        url: data.url,
-        thumbnailUrl: data.thumbnail_url,
+        id: res.id,
+        title: res.title,
+        author: res.author,
+        url: res.url,
+        thumbnailUrl: res.thumbnail_url,
+        duration: res.duration,
         progress: 0,
     };
 }
 
-export async function getPlaylistMetadata(url: string): Promise<TVideo[]> {
-    const data: {
-        videos: TVideoMetadataResponse[]
-    } = await fetch(`http://localhost:8000/metadata/playlist?url=${url}`).then(res => res.json());
 
-    return data.videos.map(video => ({
-        id: video.id,
-        title: video.title,
-        author: video.author,
-        url: video.url,
-        thumbnailUrl: video.thumbnail_url,
-        progress: 0,
-    }))
+export async function fetchVideoMetadata(url: string): Promise<TVideo> {
+    const data: TVideoMetadataResponse =
+        await fetch(`http://localhost:8000/metadata/video?url=${encodeURIComponent(url)}`)
+        .then(res => res.json());
+
+    return responseToVideo(data);
+}
+
+export async function fetchPlaylistMetadata(
+    url: string,
+    onLength: (length: number) => void,
+    onVideo: (video: TVideo) => void,
+) {
+    const res =
+        await fetch(`http://localhost:8000/metadata/playlist?url=${encodeURIComponent(url)}`)
+
+    if (!res.body) throw new Error("No response body");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+
+            const data = JSON.parse(line);
+            if ("length" in data) {
+                onLength(data.length);
+            }
+            else {
+                onVideo( responseToVideo(data as TVideoMetadataResponse) );
+            }
+        }
+    }
 }

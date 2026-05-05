@@ -4,5 +4,6 @@ export type TVideo = {
     author: string,
     url: string,
     thumbnailUrl: string,
+    duration: number,
     progress: number,
 }

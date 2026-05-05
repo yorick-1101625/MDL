@@ -2,19 +2,18 @@ import {URLInput} from "@/components/URLInput.tsx";
 import {ItemGroup} from "@/components/ui/item.tsx";
 import Video from "./Video.tsx";
 import {useRef, useState} from "react";
-import SkeletonVideo from "@/components/SkeletonVideo.tsx";
+import VideoSkeleton from "./VideoSkeleton.tsx";
 import type {TVideo} from "@/types.ts";
-import {getPlaylistMetadata, getVideoMetadata} from "@/utils/youtube.ts";
+import {fetchPlaylistMetadata, fetchVideoMetadata} from "@/utils/youtube.ts";
 import useVideos from "@/hooks/useVideos.ts";
 
 export default function SongDownloader() {
     const urlInputRef = useRef<HTMLInputElement>(null);
 
     const {videos, addVideo, updateVideoProgress} = useVideos();
-    const [isLoading, setIsLoading] = useState(false);
+    const [skeletonCount, setSkeletonCount] = useState(0);
 
     async function handleSubmit() {
-        setIsLoading(true);
 
         if (!urlInputRef.current?.value) return;
 
@@ -26,22 +25,26 @@ export default function SongDownloader() {
         let endpoint: string;
 
         if (urlType === 'video') {
+            setSkeletonCount(s => s + 1);
             endpoint = "ws://localhost:8000/ws/download/video";
 
+            const video: TVideo = await fetchVideoMetadata(url);
 
-            const video: TVideo = await getVideoMetadata(url);
-
+            setSkeletonCount(s => s - 1);
             addVideo(video);
         }
         else {
             endpoint = "ws://localhost:8000/ws/download/playlist";
 
-
-            const videos: TVideo[] = await getPlaylistMetadata(url);
-            videos.forEach(video => addVideo(video));
+            await fetchPlaylistMetadata(
+                url,
+                (length) => setSkeletonCount(length),
+                (video) => {
+                    addVideo(video);
+                    setSkeletonCount(s => s - 1);
+                }
+            );
         }
-
-        setIsLoading(false);
 
         const ws = new WebSocket(endpoint);
 
@@ -74,7 +77,9 @@ export default function SongDownloader() {
                 }
 
                 {
-                    isLoading && <SkeletonVideo/>
+                    Array.from({ length: skeletonCount }).map((_, i) => (
+                        <VideoSkeleton key={i}/>
+                    ))
                 }
             </ItemGroup>
         </>

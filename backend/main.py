@@ -1,6 +1,10 @@
+import asyncio
+import json
+
 from fastapi import FastAPI
 from pytubefix import Playlist, YouTube
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import StreamingResponse
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from backend.config import DOWNLOAD_PATH
@@ -32,13 +36,26 @@ def get_metadata_video(url):
     return get_video_metadata(video)
 
 
+async def stream_playlist_metadata(playlist: Playlist):
+
+    tasks = [asyncio.to_thread(get_video_metadata, video) for video in playlist.videos]
+
+    yield json.dumps({'length': playlist.length }) + '\n'
+
+    for coro in asyncio.as_completed(tasks):
+        metadata = await coro
+        yield json.dumps(metadata) + '\n'
+
+
 @app.get('/metadata/playlist')
 def get_metadata_playlist(url):
     playlist = Playlist(url)
 
-    return {
-        'videos': [get_video_metadata(video) for video in playlist.videos],
-    }
+    return StreamingResponse(
+        stream_playlist_metadata(playlist),
+        media_type="application/x-ndjson",
+    )
+
 
 
 @app.websocket('/ws/download/video')

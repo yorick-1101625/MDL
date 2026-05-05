@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 from typing import Optional, Callable, Any
-from starlette.websockets import WebSocket
 from anyio import from_thread
 from anyio.to_thread import run_sync
 from pytubefix import Playlist, Stream
@@ -58,7 +57,7 @@ def get_video_metadata(yt: YouTube) -> dict[str, Any]:
     return {
         'author': yt.author,
         'title': yt.title,
-        # 'duration': yt.length,
+        'duration': yt.length,
         'thumbnail_url': yt.thumbnail_url,
         'id': yt.video_id,
         'url': yt.watch_url,

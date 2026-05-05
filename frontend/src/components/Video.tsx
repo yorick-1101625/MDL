@@ -6,10 +6,11 @@ type VideoProps = {
     title: string,
     author: string,
     url: string,
+    duration: number,
     progress?: number,
 }
 
-export default function Video({id, title, author, url, progress = 0}: VideoProps) {
+export default function Video({id, title, author, url, duration, progress = 0}: VideoProps) {
     return (
         <Item variant="outline" role="listitem">
             <a href={url} target="_blank">
@@ -34,7 +35,7 @@ export default function Video({id, title, author, url, progress = 0}: VideoProps
             </ItemContent>
             <ItemContent className="flex-none text-center">
                 <ItemDescription>{
-                    // `${Math.floor(duration/60)}:${duration - (Math.floor(duration/60) * 60)}`
+                    `${Math.floor(duration/60)}:${duration - (Math.floor(duration/60) * 60)}`
 
                 //TODO:     ADD STATUS CHECKMARK OR CROSS
                 }</ItemDescription>

@@ -1,7 +1,7 @@
 import {Item, ItemContent, ItemMedia} from "@/components/ui/item.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
 
-export default function SkeletonVideo() {
+export default function VideoSkeleton() {
     return (
         <Item variant="outline" role="listitem">
             <ItemMedia variant="image">
