@@ -1,18 +1,11 @@
-from anyio import from_thread
 from fastapi import FastAPI
-from pytubefix import Stream, Playlist
-from pydantic import BaseModel
+from pytubefix import Playlist, YouTube
 from starlette.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from backend.config import DOWNLOAD_PATH
-from backend.services.downloader import download_video_audio, download_playlist_audio, get_video_details, \
+from backend.services.downloader import download_video_audio, get_video_metadata, \
     create_progress_callback
-
-
-class Url(BaseModel):
-    url: str
-
 
 app = FastAPI()
 # /docs or /redoc for api documentation and testing
@@ -32,12 +25,20 @@ app.add_middleware(
 )
 
 
-# @app.post('/download/video')
-# async def download(url: Url):
-#
-#     file_location = download_video_audio(url.url)
-#
-#     return {"file": file_location}
+@app.get('/metadata/video')
+def get_metadata_video(url):
+    video = YouTube(url)
+
+    return get_video_metadata(video)
+
+
+@app.get('/metadata/playlist')
+def get_metadata_playlist(url):
+    playlist = Playlist(url)
+
+    return {
+        'videos': [get_video_metadata(video) for video in playlist.videos],
+    }
 
 
 @app.websocket('/ws/download/video')
@@ -47,23 +48,17 @@ async def ws_download_video(websocket: WebSocket):
     try:
         url = await websocket.receive_text()
 
-        video_details = get_video_details(url)
+        yt = YouTube(url)
+        metadata = get_video_metadata(yt)
 
-        on_progress = create_progress_callback(video_details['id'], websocket)
-
-        # Send back details: title, author, thumbnail_url
-        await websocket.send_json({
-            'type': 'metadata',
-            'data': video_details
-        })
-
+        on_progress = create_progress_callback(metadata['id'], websocket)
         await download_video_audio(url, on_progress)
 
         await websocket.send_json({
             'type': 'progress',
             'data': {
                 'value': 100,
-                'id': video_details['id'],
+                'id': metadata['id'],
             }
         })
 
@@ -83,25 +78,13 @@ async def download(websocket: WebSocket):
         playlist = Playlist(url)
         print(f"Playlist : {playlist.title} ({playlist.length} videos)")
 
-        await websocket.send_json({
-            'type': 'playlist_length',
-            'data': {
-                'value': playlist.length
-            }
-        })
-
+        # Start download
         downloaded_files = []
         for index, video in enumerate(playlist.videos):
             try:
-                print(f"[{index}/{playlist.length}]", end=" ")
-                # Send back details: title, author, thumbnail_url
-                await websocket.send_json({
-                    'type': 'metadata',
-                    'data': get_video_details(video.watch_url)
-                })
+                print(f"[{index + 1}/{playlist.length}]")
 
                 on_progress = create_progress_callback(video.video_id, websocket)
-
                 path = await download_video_audio(video.watch_url, on_progress)
 
                 await websocket.send_json({
@@ -115,6 +98,7 @@ async def download(websocket: WebSocket):
                 downloaded_files.append(path)
             except Exception as e:
                 print(f"    Skipped '{video.title}' ({video.watch_url}): {e}")
+                # TODO: send error through websocket
 
         print(f"\nDone — {len(downloaded_files)} file(s) saved to: {DOWNLOAD_PATH}")
 

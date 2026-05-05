@@ -54,12 +54,11 @@ async def download_playlist_audio(url: str) -> list[Path]:
     return downloaded_files
 
 
-def get_video_details(url: str) -> dict[str, Any]:
-    yt = YouTube(url)
+def get_video_metadata(yt: YouTube) -> dict[str, Any]:
     return {
         'author': yt.author,
         'title': yt.title,
-        'duration': yt.length,
+        # 'duration': yt.length,
         'thumbnail_url': yt.thumbnail_url,
         'id': yt.video_id,
     }

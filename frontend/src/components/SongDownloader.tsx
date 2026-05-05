@@ -4,7 +4,7 @@ import Video from "./Video.tsx";
 import {useRef, useState} from "react";
 import SkeletonVideo from "@/components/SkeletonVideo.tsx";
 import type {TVideo} from "@/types.ts";
-import {getVideoMetadata} from "@/utils/youtube.ts";
+import {getPlaylistMetadata, getVideoMetadata} from "@/utils/youtube.ts";
 import useVideos from "@/hooks/useVideos.ts";
 
 export default function SongDownloader() {
@@ -16,7 +16,6 @@ export default function SongDownloader() {
     async function handleSubmit() {
         if (!urlInputRef.current?.value) return;
 
-        setNumberInQueue(1);
 
         const url: string = urlInputRef.current.value;
 
@@ -26,11 +25,13 @@ export default function SongDownloader() {
 
         if (urlType === 'video') {
             endpoint = "ws://localhost:8000/ws/download/video";
+
             const video: TVideo = await getVideoMetadata(url);
-            setNumberInQueue(n => n - 1);
             addVideo(video);
         }
         else {
+            const videos: TVideo[] = await getPlaylistMetadata(url);
+            videos.forEach(video => addVideo(video));
             endpoint = "ws://localhost:8000/ws/download/playlist";
         }
 
@@ -45,13 +46,6 @@ export default function SongDownloader() {
             const data = res.data;
 
             switch (res.type) {
-                case "playlist_length":
-                    setNumberInQueue(data.value);
-                    break;
-                case "metadata":
-                    addVideo(data);
-                    setNumberInQueue(prev => prev - 1);
-                    break;
                 case "progress":
                     updateVideoProgress(data.id, data.value);
                     break;
@@ -80,7 +74,6 @@ export default function SongDownloader() {
                         <SkeletonVideo key={value}/>
                     ))
                 }
-                <SkeletonVideo/>
             </ItemGroup>
         </>
     );

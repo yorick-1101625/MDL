@@ -1,16 +1,35 @@
 import type {TVideo} from "@/types.ts";
 
+type TVideoMetadataResponse = {
+    id: string,
+    title: string,
+    author: string,
+    thumbnail_url: string,
+};
+
 export async function getVideoMetadata(url: string): Promise<TVideo> {
-    const data = await fetch(`https://youtube.com/oembed?url=${url}&format=json`)
+    const data: TVideoMetadataResponse = await fetch(`http://localhost:8000/metadata/video?url=${url}`)
         .then(res => res.json());
 
-    const id: string = data.thumbnail_url.split('/')[4];
-
     return {
-        id: id,
+        id: data.id,
         title: data.title,
-        author: data.author_name,
+        author: data.author,
         thumbnailUrl: data.thumbnail_url,
-        progress: 0.
+        progress: 0
     };
+}
+
+export async function getPlaylistMetadata(url: string): Promise<TVideo[]> {
+    const data: {
+        videos: TVideoMetadataResponse[]
+    } = await fetch(`http://localhost:8000/metadata/playlist?url=${url}`).then(res => res.json());
+
+    return data.videos.map(video => ({
+        id: video.id,
+        title: video.title,
+        author: video.author,
+        thumbnailUrl: video.thumbnail_url,
+        progress: 0,
+    }))
 }
