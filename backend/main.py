@@ -84,7 +84,7 @@ async def download(websocket: WebSocket):
         print(f"Playlist : {playlist.title} ({playlist.length} videos)")
 
         await websocket.send_json({
-            'type': 'length',
+            'type': 'playlist_length',
             'data': {
                 'value': playlist.length
             }

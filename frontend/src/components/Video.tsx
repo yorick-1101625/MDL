@@ -5,11 +5,10 @@ type VideoProps = {
     id: string,
     title: string,
     author: string,
-    duration: number,
     progress: number,
 }
 
-export default function Video({id, title, author, duration, progress}: VideoProps) {
+export default function Video({id, title, author, progress}: VideoProps) {
     return (
         <Item variant="outline" role="listitem">
             <ItemMedia variant="image">
@@ -31,7 +30,7 @@ export default function Video({id, title, author, duration, progress}: VideoProp
             </ItemContent>
             <ItemContent className="flex-none text-center">
                 <ItemDescription>{
-                    `${Math.floor(duration/60)}:${duration - (Math.floor(duration/60) * 60)}`
+                    // `${Math.floor(duration/60)}:${duration - (Math.floor(duration/60) * 60)}`
 
                 //TODO:     ADD STATUS CHECKMARK OR CROSS
                 }</ItemDescription>

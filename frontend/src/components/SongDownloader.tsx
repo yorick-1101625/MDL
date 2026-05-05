@@ -3,30 +3,36 @@ import {ItemGroup} from "@/components/ui/item.tsx";
 import Video from "./Video.tsx";
 import {useRef, useState} from "react";
 import SkeletonVideo from "@/components/SkeletonVideo.tsx";
-
-type TVideo = {
-    id: string,
-    title: string,
-    author: string,
-    duration: number,
-    thumbnailUrl: string,
-    progress: number,
-}
+import type {TVideo} from "@/types.ts";
+import {getVideoMetadata} from "@/utils/youtube.ts";
+import useVideos from "@/hooks/useVideos.ts";
 
 export default function SongDownloader() {
     const urlInputRef = useRef<HTMLInputElement>(null);
 
-    const [videos, setVideos] = useState<TVideo[]>([]);
+    const {videos, addVideo, updateVideoProgress} = useVideos();
     const [numberInQueue, setNumberInQueue] = useState(0);
 
     async function handleSubmit() {
+        if (!urlInputRef.current?.value) return;
+
         setNumberInQueue(1);
 
-        const url: string = urlInputRef.current?.value || '';
+        const url: string = urlInputRef.current.value;
 
-        const endpoint = url.includes('playlist')
-            ?   "ws://localhost:8000/ws/download/playlist"
-            :   "ws://localhost:8000/ws/download/video";
+        const urlType = url.includes('playlist') ? 'playlist' : 'video';
+
+        let endpoint: string;
+
+        if (urlType === 'video') {
+            endpoint = "ws://localhost:8000/ws/download/video";
+            const video: TVideo = await getVideoMetadata(url);
+            setNumberInQueue(n => n - 1);
+            addVideo(video);
+        }
+        else {
+            endpoint = "ws://localhost:8000/ws/download/playlist";
+        }
 
         const ws = new WebSocket(endpoint);
 
@@ -39,16 +45,15 @@ export default function SongDownloader() {
             const data = res.data;
 
             switch (res.type) {
-                case "length":
+                case "playlist_length":
                     setNumberInQueue(data.value);
                     break;
                 case "metadata":
-                    // TODO: Check if id duplicate
-                    setVideos(v => [...v, data]);
+                    addVideo(data);
                     setNumberInQueue(prev => prev - 1);
                     break;
                 case "progress":
-                    setVideos(prev => prev.map(v => v.id === data.id ? {...v, progress: data.value} : v));
+                    updateVideoProgress(data.id, data.value);
                     break;
                 default:
                     break;
@@ -71,7 +76,7 @@ export default function SongDownloader() {
                 }
 
                 {
-                    Array(numberInQueue).fill(null).map(value => (
+                    numberInQueue > 0 && Array(numberInQueue).fill(null).map(value => (
                         <SkeletonVideo key={value}/>
                     ))
                 }
