@@ -11,9 +11,11 @@ export default function SongDownloader() {
     const urlInputRef = useRef<HTMLInputElement>(null);
 
     const {videos, addVideo, updateVideoProgress} = useVideos();
-    const [numberInQueue, setNumberInQueue] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
     async function handleSubmit() {
+        setIsLoading(true);
+
         if (!urlInputRef.current?.value) return;
 
 
@@ -26,14 +28,20 @@ export default function SongDownloader() {
         if (urlType === 'video') {
             endpoint = "ws://localhost:8000/ws/download/video";
 
+
             const video: TVideo = await getVideoMetadata(url);
+
             addVideo(video);
         }
         else {
+            endpoint = "ws://localhost:8000/ws/download/playlist";
+
+
             const videos: TVideo[] = await getPlaylistMetadata(url);
             videos.forEach(video => addVideo(video));
-            endpoint = "ws://localhost:8000/ws/download/playlist";
         }
+
+        setIsLoading(false);
 
         const ws = new WebSocket(endpoint);
 
@@ -53,10 +61,6 @@ export default function SongDownloader() {
                     break;
             }
         });
-
-        ws.addEventListener("close", () => {
-            setNumberInQueue(0);
-        })
     }
 
     return (
@@ -70,9 +74,7 @@ export default function SongDownloader() {
                 }
 
                 {
-                    numberInQueue > 0 && Array(numberInQueue).fill(null).map(value => (
-                        <SkeletonVideo key={value}/>
-                    ))
+                    isLoading && <SkeletonVideo/>
                 }
             </ItemGroup>
         </>
