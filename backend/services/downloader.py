@@ -1,11 +1,11 @@
 import re
 from pathlib import Path
 from typing import Optional, Callable, Any
-
+from starlette.websockets import WebSocket
+from anyio import from_thread
 from anyio.to_thread import run_sync
-from pytubefix import Playlist
+from pytubefix import Playlist, Stream
 from pytubefix.__main__ import YouTube
-from pytubefix.cli import on_progress
 
 from backend.config import DOWNLOAD_PATH
 
@@ -63,3 +63,20 @@ def get_video_details(url: str) -> dict[str, Any]:
         'thumbnail_url': yt.thumbnail_url,
         'id': yt.video_id,
     }
+
+
+def create_progress_callback(video_id: int, websocket: Websocket) -> Callable[[Any, bytes, int], None]:
+    def on_progress(stream: Stream, chunk: bytes, bytes_remaining: int):
+        total_size = stream.filesize
+        bytes_downloaded = total_size - bytes_remaining
+        percentage_of_completion = round((bytes_downloaded / total_size) * 100, 2)
+
+        from_thread.run(websocket.send_json,{
+            'type': 'progress',
+            'data': {
+                'value': percentage_of_completion,
+                'id': video_id,
+            }
+        })
+
+    return on_progress

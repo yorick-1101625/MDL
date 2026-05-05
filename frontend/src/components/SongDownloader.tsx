@@ -20,7 +20,11 @@ export default function SongDownloader() {
     async function handleSubmit() {
         const url: string = urlInputRef.current?.value || '';
 
-        const ws = new WebSocket("ws://localhost:8000/ws/download/video");
+        const endpoint = url.includes('playlist')
+            ?   "ws://localhost:8000/ws/download/playlist"
+            :   "ws://localhost:8000/ws/download/video";
+
+        const ws = new WebSocket(endpoint);
 
         ws.addEventListener("open", () => {
             ws.send(url);
